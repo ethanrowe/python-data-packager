@@ -1,4 +1,5 @@
 import os
+import pkg_resources
 import re
 import warnings
 
@@ -6,9 +7,84 @@ REQ_PATTERN = re.compile('\bdata_packager\b')
 DEFAULT_ASSETS_SUBDIRECTORY = 'assets'
 INSTALL_REQUIREMENTS = ['data_packager']
 
+class _Manager(object):
+    def __init__(self, package, path):
+        self.package = package
+        self.path = path
+
+    def relative(self, asset):
+        return os.path.join(self.path, asset)
+
+    def writer(self, asset):
+        raise NotImplementedError, "The writer operation is not supported for this AssetManager"
+
+class _PathManager(_Manager):
+    def filename(self, asset):
+        return self.relative(asset)
+
+    def exists(self, asset):
+        return os.path.exists(self.relative(asset))
+
+    def list(self, asset):
+        return os.listdir(self.relative(asset) if asset else self.path)
+
+    def string(self, asset):
+        return self.stream(asset).read()
+
+    def stream(self, asset):
+        return open(self.relative(asset), 'rb')
+
+    def writer(self, asset):
+        return open(self.relative(asset), 'wb')
+
+class _PackageManager(_Manager):
+    def call(self, name, *args):
+        func = getattr(pkg_resources, name)
+        return func(self.package, *args)
+
+    def filename(self, asset):
+        return self.call('resource_filename', self.relative(asset))
+
+    def exists(self, asset):
+        return self.call('resource_exists', self.relative(asset))
+
+    def list(self, asset):
+        return self.call('resource_listdir',
+                         self.relative(asset) if asset else self.path)
+
+    def string(self, asset):
+        return self.call('resource_string', self.relative(asset))
+
+    def stream(self, asset):
+        return self.call('resource_stream', self.relative(asset))
+
 class AssetManager(object):
     PACKAGE = None
     ASSETS_DIRECTORY = DEFAULT_ASSETS_SUBDIRECTORY
+
+    def __init__(self, assets_path=None):
+        if assets_path:
+            self._manager = _PathManager(self.PACKAGE, os.path.realpath(assets_path))
+        else:
+            self._manager = _PackageManager(self.PACKAGE, self.ASSETS_DIRECTORY)
+
+    def filename(self, asset):
+        return self._manager.filename(asset)
+
+    def exists(self, asset):
+        return self._manager.exists(asset)
+
+    def list(self):
+        return self._manager.list(None)
+
+    def string(self, asset):
+        return self._manager.string(asset)
+
+    def stream(self, asset):
+        return self._manager.stream(asset)
+
+    def writer(self, asset):
+        return self._manager.writer(asset)
 
 class Builder(object):
     def __init__(self, package, assets_subdir=None):
@@ -90,6 +166,6 @@ class Builder(object):
         args = ','.join("'%s'" % arg for arg in args)
         with open(path, 'w') as f:
             print >> f, 'import data_packager'
-            print >> f, 'AssetManager = data_packager.Builder(%s).get_asset_manager_class' % args
+            print >> f, 'AssetManager = data_packager.Builder(%s).get_asset_manager_class()' % args
             print >> f, 'del data_packager'
 
