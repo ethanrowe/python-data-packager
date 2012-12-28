@@ -1,0 +1,14 @@
+# Data Packager (data_packager) #
+
+Provides simple tools to allow for the versioned packaging of arbitrary
+assets.
+
+For instance, suppose you have a given data set that your apps depend upon,
+which change slowly, but have considerable impact on your appllication
+behaviors.
+
+You want to manage the data set on a versioned basis, such that somebody
+can install a specific version of the data into their virtualenv.
+
+This gives a simple way for organizing such packages and a simple interface
+for accessing assets within them.
