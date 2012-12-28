@@ -1,1 +1,6 @@
 include LICENSE
+recursive-include data_packager/test/test-fixture-package *
+recursive-exclude data_packager/test/test-fixture-package \.*
+recursive-exclude data_packager/test/test-fixture-package *.pyc
+recursive-exclude data_packager/test/test-fixture-package *.swp
+
