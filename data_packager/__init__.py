@@ -134,6 +134,16 @@ class AssetManager(object):
         """
         return self._manager.writer(asset)
 
+    @classmethod
+    def get_builder(cls):
+        """Classmethod returning a new `Builder` bound to the class' settings.
+
+        The `Builder` instance will always have its `assets_directory` explicitly
+        set, regardless of whether the `AssetManager`'s `ASSETS_DIRECTORY is
+        the default or not.
+        """
+        return Builder(cls.PACKAGE, cls.ASSETS_DIRECTORY)
+
 class Builder(object):
     """Package developer utility class.
 
